@@ -11,7 +11,6 @@ const char base64table[64] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
                         	  'w', 'x', 'y', 'z', '0', '1', '2', '3',
                         	  '4', '5', '6', '7', '8', '9', '+', '/'};
 
-
 unsigned char char2hexval(char c){
 	if (c >= '0' && c <= '9')
 		return c - '0';
@@ -102,7 +101,16 @@ char* bytes2base64(unsigned char* bytes, size_t byteslen, size_t* base64lenp){
 	return base64;
 }
 
-int main(int argc, char* argv[]){
+unsigned char* xor(unsigned char* bytes1, unsigned char* bytes2, size_t len){
+	unsigned char* xorbytes = (unsigned char*)malloc(len*sizeof(unsigned char));
+	for (int i = 0; i < len; i++){
+		xorbytes[i] = bytes1[i] ^ bytes2[i];
+	}
+	return xorbytes;
+}
+
+void challenge_1(){
+	printf("Challenge 1:\n");
 	char* hex = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d";
 	size_t hexsize = strlen(hex);
 	size_t byteslen;
@@ -111,11 +119,161 @@ int main(int argc, char* argv[]){
 		printf("%02x",bytes[i]);
 	}
 	printf("\n");
+	char* answer = "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t";
+	printf("Expected: %s\n", answer);
 	size_t base64len;
 	char* base64 = bytes2base64(bytes, byteslen, &base64len);
-	printf("%s\n", base64);
+	printf("Received: %s\n", base64);
 	free(bytes);
 	free(base64);
+	printf("\n");
+}
+
+void challenge_2(){
+	printf("Challenge 2:\n");
+	char* hex1 = "1c0111001f010100061a024b53535009181c";
+	size_t hex1size = strlen(hex1);
+	size_t bytes1len;
+	unsigned char* bytes1 = hex2bytes(hex1, hex1size, &bytes1len);
+	char* hex2 = "686974207468652062756c6c277320657965";
+	size_t hex2size = strlen(hex2);
+	size_t bytes2len;
+	unsigned char* bytes2 = hex2bytes(hex2, hex2size, &bytes2len);
+	unsigned char* xorbytes = xor(bytes1, bytes2, bytes1len);
+	printf("IN1: %s\nIN2: %s\nXOR: ", hex1, hex2);
+	for (int i = 0; i < bytes1len; i++){
+		printf("%02x",xorbytes[i]);
+	}
+	printf("\n\n");
+	free(bytes1);
+	free(bytes2);
+	free(xorbytes);
+}
+
+unsigned char* single_byte_xor(unsigned char* bytes, unsigned char byte, size_t len){
+	unsigned char* xorbytes = (unsigned char*)malloc(len*sizeof(unsigned char));
+	unsigned char* charbytes = (unsigned char*)malloc(len*sizeof(unsigned char));
+	for (int i = 0; i < len; i++)
+		charbytes[i] = byte;
+	xorbytes = xor(bytes, charbytes, len);
+	free(charbytes);
+	return xorbytes;
+}
+
+int score_plaintext(unsigned char* bytes, size_t len){
+	int score = 0;
+	for (int i = 0; i < len; i++){
+		char c = bytes[i];
+		if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == ' ')
+			score++;
+		else if ((c > 13 && c < 32) || c > 127)
+			score -= 10;
+		else
+			score--;
+	}
+	return score;
+}
+
+int score_single_byte_xor(unsigned char* bytes, size_t len, unsigned char** topp,  unsigned char* byte){
+	unsigned char* top = NULL;
+	int top_score = 0;
+	unsigned char key = 0;
+	for (unsigned char i = 0; i < 255; i++){
+		unsigned char* xorbytes = single_byte_xor(bytes, i, len);
+		int score = score_plaintext(xorbytes, len);
+		if (score > top_score){
+			top_score = score;
+			top = xorbytes;
+			key = i;
+		}
+		else{
+			free(xorbytes);
+		}
+	}
+	*topp = top;
+	*byte = key;
+	return top_score;
+}
+
+void challenge_3(){
+	printf("Challenge 3:\n");
+	char* hex = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
+	size_t hexsize = strlen(hex);
+	size_t byteslen;
+	unsigned char* bytes = hex2bytes(hex, hexsize, &byteslen);
+	unsigned char* top;
+	unsigned char key;
+	score_single_byte_xor(bytes, byteslen, &top, &key);
+	printf("Key: %c\n", key);
+	printf("%s\n\n", top);
+	free(bytes);
+}
+
+void challenge_4(){
+	printf("Challenge 4:\n");
+	FILE* fp;
+	char hex[62], top_hex[62];
+	unsigned char* top_top = NULL;
+	unsigned char top_key = 0;
+	int top_score = 0;
+	fp = fopen("challenge_4.txt", "r");
+	while (1){
+		if (feof(fp))
+			break;
+		fgets(hex, 62, fp);
+		size_t hexsize = strlen(hex) - 1;
+		size_t byteslen;
+		unsigned char* bytes = hex2bytes(hex, hexsize, &byteslen);
+		unsigned char* top;
+		unsigned char key;
+		int score = score_single_byte_xor(bytes, byteslen, &top, &key);
+		if (score > top_score){
+			memcpy(top_hex, hex, hexsize);
+			top_score = score;
+			if (top_top)
+				free(top_top);
+			top_top = top;
+			top_key = key;
+		}
+	}
+	printf("Key: %c\n", top_key);
+	printf("%s\n\n", top_top);
+	free(top_top);
+	fclose(fp);
+}
+
+unsigned char* repeating_key_xor(unsigned char* bytes, unsigned char* key, size_t len, size_t key_len){
+	unsigned char* xorbytes = (unsigned char*)malloc(len*sizeof(unsigned char));
+	unsigned char* charbytes = (unsigned char*)malloc(len*sizeof(unsigned char));
+	for (int i = 0; i < len; i++){
+		charbytes[i] = key[i % key_len];
+	}
+	xorbytes = xor(bytes, charbytes, len);
+	free(charbytes);
+	return xorbytes;
+}
+
+void challenge_5(){
+	printf("Challenge 5:\n");
+	unsigned char key[3] = "ICE";
+
+	char* str = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal";
+	size_t len = strlen(str);
+
+	unsigned char* cipher = repeating_key_xor((unsigned char*)str, key, len, 3);
+	for (int i = 0; i < len; i++){
+		printf("%02x",cipher[i]);
+	}
+	printf("\n\n");
+	free(cipher);
+}
+
+int main(int argc, char* argv[]){
+	challenge_1();
+	challenge_2();
+	challenge_3();
+	challenge_4();
+	challenge_5();
 	return 0;
 }
 
