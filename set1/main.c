@@ -268,12 +268,40 @@ void challenge_5(){
 	free(cipher);
 }
 
+size_t hamming_dist(unsigned char* str1, unsigned char* str2, size_t len){
+	size_t dist = 0;
+	for (int i = 0; i < len; i++){
+		unsigned char xorbyte = str1[i] ^ str2[i];
+		while (xorbyte){
+			xorbyte &= (xorbyte - 1);
+			dist++;
+		}
+	}
+	return dist;
+}
+
+void challenge_6(){
+	printf("Challenge 6:\n");
+	FILE* fp;
+	fp = fopen("challenge_6.txt", "r");
+	fseek(fp, 0, SEEK_END);
+	int filelen = ftell(fp);
+	rewind(fp);
+	char* buff = (char*)malloc((filelen+1)*sizeof(char));
+	fread(buff, filelen, 1, fp);
+	fclose(fp);
+	printf("%s\n", buff);
+	free(buff);
+}
+
+
 int main(int argc, char* argv[]){
-	challenge_1();
+	/*challenge_1();
 	challenge_2();
 	challenge_3();
 	challenge_4();
-	challenge_5();
+	challenge_5();*/
+	challenge_6();
 	return 0;
 }
 
