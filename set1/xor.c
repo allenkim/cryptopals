@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "xor.h"
 
@@ -75,5 +76,46 @@ size_t hamming_dist(unsigned char* str1, unsigned char* str2, size_t len){
 		}
 	}
 	return dist;
+}
+
+float score_keysize(unsigned char* bytes, size_t len, size_t keysize){
+	if (keysize*2 > len){
+		fprintf(stderr, "Key size '%zu' too large for len %zu\n", keysize, len);
+		exit(EXIT_FAILURE);
+	}
+	float score = (float)(hamming_dist(bytes,bytes+keysize,keysize)) / keysize;
+	return score;
+}
+
+typedef struct key{
+	size_t keysize;
+	float score;
+} key;
+
+static int keycmp (const void* a, const void* b){
+	key* k1 = (key*)a;
+	key* k2 = (key*)b;
+	if (k1->score < k2->score)
+		return -1;
+	else if (k1->score > k2->score)
+		return 1;
+	else
+		return 0;
+}
+
+size_t* find_best_keysizes(unsigned char* bytes, size_t len, size_t max){
+	key* keys = (key*)malloc(len*sizeof(key));
+	for (size_t keysize = 1; keysize <= max; keysize++){
+		float score = score_keysize(bytes, len, keysize);
+		keys[keysize-1].keysize = keysize;
+		keys[keysize-1].score = score;
+	}
+	qsort(keys, max, sizeof(key), keycmp);
+	size_t* keysizes = (size_t*)malloc(max*sizeof(size_t));
+	for (int i = 0; i < max; i++){
+		keysizes[i] = keys[i].keysize;
+		printf("%zu %f\n", keys[i].keysize, keys[i].score);
+	}
+	return keysizes;
 }
 

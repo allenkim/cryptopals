@@ -148,11 +148,29 @@ void challenge_6(){
 	fseek(fp, 0, SEEK_END);
 	int filelen = ftell(fp);
 	rewind(fp);
-	char* buff = (char*)malloc((filelen+1)*sizeof(char));
-	fread(buff, filelen, 1, fp);
+	char* base64 = (char*)malloc((filelen+1)*sizeof(char));
+	int linenum = 0;
+	while (1){
+		if (feof(fp))
+			break;
+		fgets(base64 + linenum*60, 62, fp);
+		linenum++;
+	}
 	fclose(fp);
-	buff[filelen] = 0;
-	printf("%s\n", buff);
-	free(buff);
+	char *pos;
+	if ((pos=strchr(base64, '\n')) != NULL)
+    	*pos = 0;
+	printf("%s\n%d\n", base64, linenum);
+	size_t base64len = strlen(base64);
+	size_t byteslenp;
+	unsigned char* bytes = base64_to_bytes(base64, base64len, &byteslenp);
+	size_t MAX_KEYSIZE = 40;
+	size_t* keysizes = find_best_keysizes(bytes, filelen, MAX_KEYSIZE);
+	for (int i = 0; i < MAX_KEYSIZE; i++){
+		printf("%zu ", keysizes[i]);
+	}
+	printf("\n");
+	free(keysizes);
+	free(base64);
 }
 
