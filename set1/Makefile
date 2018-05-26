@@ -1,12 +1,21 @@
+SOURCES := $(wildcard *.c)
+OBJECTS := $(SOURCES:.c=.o)
+HEADERS := $(wildcard *.h)
+HD_OBJS := $(HEADERS:.h=.o)
+TARGETS := main
+
+CFLAGS=-Wall -O2 -std=c99
 CC=gcc
-CFLAGS=-O2 -Wall
-OBJ=main.o
+LDADD=
 
-%.o:%.c
-	$(CC) -c -o $@ $< $(CFLAGS)
+all: $(TARGETS)
+.PHONY : all
 
-main: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+$(OBJECTS) : %.o : %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@ $(LDADD)
+
+$(TARGETS) : % : %.o $(HD_OBJS)
+	$(CC) -o $@ $^ $(LDADD)
 
 clean:
-	rm main *.o
+	rm $(TARGETS) $(OBJECTS)
