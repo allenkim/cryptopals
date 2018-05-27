@@ -149,17 +149,13 @@ void challenge_6(){
 	int filelen = ftell(fp);
 	rewind(fp);
 	char* base64 = (char*)malloc((filelen+1)*sizeof(char));
-	int linenum = 0;
-	while (1){
-		if (feof(fp))
-			break;
-		fgets(base64 + linenum*60, 62, fp);
-		linenum++;
-	}
+	fread(base64, filelen, sizeof(char), fp);
 	fclose(fp);
+	/*
 	char *pos;
 	if ((pos=strchr(base64, '\n')) != NULL)
-    	*pos = 0;
+    	*pos = 0;*/
+	base64[filelen] = 0;
 	size_t base64len = strlen(base64);
 	size_t byteslen;
 	unsigned char* bytes = base64_to_bytes(base64, base64len, &byteslen);
@@ -174,8 +170,8 @@ void challenge_6(){
 			break;
 	}
 	msg = repeating_key_xor(bytes, key, byteslen, keysizes[i]);
-	printf("%s\n", key);
-	printf("%s\n", msg);
+	printf("KEY: %s\n", key);
+	printf("MSG: %s\n", msg);
 	free(key);
 	free(msg);
 	free(keysizes);

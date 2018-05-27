@@ -102,7 +102,8 @@ int score_single_byte_xor(unsigned char* bytes, size_t len, unsigned char** topp
 }
 
 unsigned char* repeating_key_xor(unsigned char* bytes, unsigned char* key, size_t len, size_t key_len){
-	unsigned char* xorbytes_arr = (unsigned char*)malloc(len*sizeof(unsigned char));
+	unsigned char* xorbytes_arr = (unsigned char*)malloc((len+1)*sizeof(unsigned char));
+	xorbytes_arr[len] = 0;
 	unsigned char* charbytes = (unsigned char*)malloc(len*sizeof(unsigned char));
 	for (int i = 0; i < len; i++){
 		charbytes[i] = key[i % key_len];
@@ -165,7 +166,6 @@ size_t* find_best_keysizes(unsigned char* bytes, size_t len, size_t max){
 	size_t* keysizes = (size_t*)malloc(max*sizeof(size_t));
 	for (int i = 0; i < max; i++){
 		keysizes[i] = keys[i].keysize;
-		printf("%zu %f\n", keys[i].keysize, keys[i].score);
 	}
 	return keysizes;
 }
@@ -185,7 +185,8 @@ unsigned char* transpose_bytes(unsigned char* bytes, size_t len, size_t keysize,
 }
 
 unsigned char* find_repeating_xor_key(unsigned char* bytes, size_t len, size_t keysize){
-	unsigned char* key = (unsigned char*)malloc(keysize*sizeof(unsigned char));
+	char* key = (char*)malloc((keysize+1)*sizeof(char));
+	key[keysize] = 0;
 	size_t* transposed_lens = (size_t*)malloc(keysize*sizeof(size_t));
 	unsigned char* transposed_bytes = transpose_bytes(bytes, len, keysize, &transposed_lens);
 	unsigned char* topp;
@@ -205,6 +206,6 @@ unsigned char* find_repeating_xor_key(unsigned char* bytes, size_t len, size_t k
 	free(topp);
 	free(transposed_bytes);
 	free(transposed_lens);
-	return key;
+	return (unsigned char*)key;
 }
 
