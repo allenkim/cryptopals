@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <ctype.h>
 #include "xor.h"
 
 unsigned char* xorbytes(unsigned char* bytes1, unsigned char* bytes2, size_t len){
@@ -20,28 +22,72 @@ unsigned char* single_byte_xor(unsigned char* bytes, unsigned char byte, size_t 
 	return xorbytes_arr;
 }
 
-int score_plaintext(unsigned char* bytes, size_t len){
-	int score = 0;
+float letter_freq[26];
+
+void init_letter_freq(){
+	letter_freq['a' % 26] = 0.08167;
+	letter_freq['b' % 26] = 0.01492;
+	letter_freq['c' % 26] = 0.02782;
+	letter_freq['d' % 26] = 0.04253;
+	letter_freq['e' % 26] = 0.12702;
+	letter_freq['f' % 26] = 0.02228;
+	letter_freq['g' % 26] = 0.02015;
+	letter_freq['h' % 26] = 0.06094;
+	letter_freq['i' % 26] = 0.06966;
+	letter_freq['j' % 26] = 0.00153;
+	letter_freq['k' % 26] = 0.00772;
+	letter_freq['l' % 26] = 0.04025;
+	letter_freq['m' % 26] = 0.02406;
+	letter_freq['n' % 26] = 0.06749;
+	letter_freq['o' % 26] = 0.07507;
+	letter_freq['p' % 26] = 0.01929;
+	letter_freq['q' % 26] = 0.00095;
+	letter_freq['r' % 26] = 0.05987;
+	letter_freq['s' % 26] = 0.06327;
+	letter_freq['t' % 26] = 0.09056;
+	letter_freq['u' % 26] = 0.02758;
+	letter_freq['v' % 26] = 0.00978;
+	letter_freq['w' % 26] = 0.02360;
+	letter_freq['x' % 26] = 0.00150;
+	letter_freq['y' % 26] = 0.01974;
+	letter_freq['z' % 26] = 0.00074;
+}
+
+float letter_freq_stat_dist(float freq[26]){
+	float dist = 0;
+	for (int i = 0; i < 26; i++)
+		dist += fabsf(freq[i]-letter_freq[i]);
+	return dist;
+}
+
+float score_plaintext(unsigned char* bytes, size_t len){
+	float freq[26];
+	for (int i = 0; i < 26; i++)
+		freq[i] = 0.0;
+	size_t count = 0;
 	for (int i = 0; i < len; i++){
-		char c = bytes[i];
-		if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == ' ')
-			score++;
-		else if ((c > 13 && c < 32) || c > 127)
-			score -= 10;
-		else
-			score--;
+		int c = tolower(bytes[i]);
+		if (c >= 'a' && c <= 'z'){
+			freq[c % 26]++;
+			count++;
+		}
+		if (c != '\n' && c != ' ' && (c <= 31 || c >= 127))
+			return 100.0;
 	}
-	return score;
+	for (int i = 0; i < 26; i++){
+		freq[i] /= count;
+	}
+	return letter_freq_stat_dist(freq);
 }
 
 int score_single_byte_xor(unsigned char* bytes, size_t len, unsigned char** topp,  unsigned char* byte){
 	unsigned char* top = NULL;
-	int top_score = 0;
+	float top_score = 100.0;
 	unsigned char key = 0;
 	for (unsigned char i = 0; i < 255; i++){
 		unsigned char* xorbytes = single_byte_xor(bytes, i, len);
-		int score = score_plaintext(xorbytes, len);
-		if (score > top_score){
+		float score = score_plaintext(xorbytes, len);
+		if (score < top_score){
 			top_score = score;
 			top = xorbytes;
 			key = i;
@@ -83,8 +129,13 @@ float score_keysize(unsigned char* bytes, size_t len, size_t keysize){
 		fprintf(stderr, "Key size '%zu' too large for len %zu\n", keysize, len);
 		exit(EXIT_FAILURE);
 	}
-	float score = (float)(hamming_dist(bytes,bytes+keysize,keysize)) / keysize;
-	return score;
+	float score = 0;
+	int count = 0;
+	for (int i = 0; i <= len-2*keysize; i += 2*keysize){
+		score += (float)(hamming_dist(bytes+i,bytes+i+keysize,keysize)) / keysize;
+		count++;
+	}
+	return score/count;
 }
 
 typedef struct key{
@@ -117,5 +168,43 @@ size_t* find_best_keysizes(unsigned char* bytes, size_t len, size_t max){
 		printf("%zu %f\n", keys[i].keysize, keys[i].score);
 	}
 	return keysizes;
+}
+
+unsigned char* transpose_bytes(unsigned char* bytes, size_t len, size_t keysize, size_t** transposed_lens){
+	unsigned char* transposed_bytes = (unsigned char*)malloc(len*sizeof(unsigned char));
+	for (size_t i = 0; i < keysize; i++){
+		(*transposed_lens)[i] = len / keysize + (i < (len % keysize));
+	}
+	int k = 0;
+	for (int i = 0; i < keysize; i++){
+		for (int j = 0; j < (*transposed_lens)[i]; j++){
+			transposed_bytes[k++] = bytes[j*keysize+i];
+		}
+	}
+	return transposed_bytes;
+}
+
+unsigned char* find_repeating_xor_key(unsigned char* bytes, size_t len, size_t keysize){
+	unsigned char* key = (unsigned char*)malloc(keysize*sizeof(unsigned char));
+	size_t* transposed_lens = (size_t*)malloc(keysize*sizeof(size_t));
+	unsigned char* transposed_bytes = transpose_bytes(bytes, len, keysize, &transposed_lens);
+	unsigned char* topp;
+	unsigned char byte;
+	int offset = 0;
+	for (int i = 0; i < keysize; i++){
+		score_single_byte_xor(transposed_bytes + offset, transposed_lens[i], &topp, &byte);
+		if (!topp){
+			free(transposed_bytes);
+			free(transposed_lens);
+			free(key);
+			return NULL;
+		}
+		offset += transposed_lens[i];
+		key[i] = byte;
+	}
+	free(topp);
+	free(transposed_bytes);
+	free(transposed_lens);
+	return key;
 }
 

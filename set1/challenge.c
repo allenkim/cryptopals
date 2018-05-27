@@ -160,16 +160,24 @@ void challenge_6(){
 	char *pos;
 	if ((pos=strchr(base64, '\n')) != NULL)
     	*pos = 0;
-	printf("%s\n%d\n", base64, linenum);
 	size_t base64len = strlen(base64);
-	size_t byteslenp;
-	unsigned char* bytes = base64_to_bytes(base64, base64len, &byteslenp);
+	size_t byteslen;
+	unsigned char* bytes = base64_to_bytes(base64, base64len, &byteslen);
 	size_t MAX_KEYSIZE = 40;
-	size_t* keysizes = find_best_keysizes(bytes, filelen, MAX_KEYSIZE);
-	for (int i = 0; i < MAX_KEYSIZE; i++){
-		printf("%zu ", keysizes[i]);
+	size_t* keysizes = find_best_keysizes(bytes, byteslen, MAX_KEYSIZE);
+	unsigned char* key, *msg;
+	int i;
+	for (i = 0; i < MAX_KEYSIZE; i++){
+		printf("KEYSIZE: %zu\n", keysizes[i]);
+		key = find_repeating_xor_key(bytes, byteslen, keysizes[i]);
+		if (key)
+			break;
 	}
-	printf("\n");
+	msg = repeating_key_xor(bytes, key, byteslen, keysizes[i]);
+	printf("%s\n", key);
+	printf("%s\n", msg);
+	free(key);
+	free(msg);
 	free(keysizes);
 	free(base64);
 }
