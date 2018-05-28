@@ -2,11 +2,11 @@ SOURCES := $(wildcard *.c)
 OBJECTS := $(SOURCES:.c=.o)
 HEADERS := $(wildcard *.h)
 HD_OBJS := $(HEADERS:.h=.o)
-TARGETS := 1 2 3 4 5 6 
+TARGETS := 1 2 3 4 5 6 7 8
 
 CFLAGS=-Wall -O2 -std=c99
 CC=gcc
-LDADD=
+LDADD=-lssl -lcrypto
 
 all: $(TARGETS)
 .PHONY : all
