@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include <ctype.h>
+#include <string.h>
+#include <errno.h>
 #include "xor.h"
+#include "base.h"
 
 unsigned char* xorbytes(unsigned char* bytes1, unsigned char* bytes2, size_t len){
 	unsigned char* xorbytes_arr = (unsigned char*)malloc(len*sizeof(unsigned char));
@@ -80,7 +83,7 @@ float score_plaintext(unsigned char* bytes, size_t len){
 	return letter_freq_stat_dist(freq);
 }
 
-int score_single_byte_xor(unsigned char* bytes, size_t len, unsigned char** topp,  unsigned char* byte){
+float score_single_byte_xor(unsigned char* bytes, size_t len, unsigned char** topp,  unsigned char* byte){
 	unsigned char* top = NULL;
 	float top_score = 100.0;
 	unsigned char key = 0;
@@ -207,5 +210,84 @@ unsigned char* find_repeating_xor_key(unsigned char* bytes, size_t len, size_t k
 	free(transposed_bytes);
 	free(transposed_lens);
 	return (unsigned char*)key;
+}
+
+char* break_repeating_key_xor(unsigned char* bytes, size_t byteslen, unsigned char** keyp, size_t* keylenp){
+	init_letter_freq();
+	size_t MAX_KEYSIZE = 40;
+	size_t* keysizes = find_best_keysizes(bytes, byteslen, MAX_KEYSIZE);
+	unsigned char* key, *msg;
+	int i;
+	for (i = 0; i < MAX_KEYSIZE; i++){
+		key = find_repeating_xor_key(bytes, byteslen, keysizes[i]);
+		if (key)
+			break;
+	}
+	*keyp = key;
+	*keylenp = keysizes[i];
+	msg = repeating_key_xor(bytes, key, byteslen, keysizes[i]);
+	free(keysizes);
+	return (char*)msg;
+}
+
+size_t vigenere_encrypt_file(const char* fnout, const char* fnin, unsigned char* key){
+	FILE *fdin, *fdout;
+	size_t size;
+
+	fdin = fopen(fnin,"r");
+	fseek(fdin, 0, SEEK_END);
+	size = ftell(fdin);
+	rewind(fdin);
+
+	char* buff = (char*)malloc((size+1)*sizeof(char));
+	fread(buff, size, sizeof(char), fdin);
+	buff[size] = 0;
+
+	unsigned char* cipher = repeating_key_xor((unsigned char*)buff, key, size, strlen((char*)key));
+	size_t b64len;
+	char* b64cipher = bytes_to_base64(cipher, size, &b64len);
+
+	fdout = fopen(fnout,"w");
+	fwrite(b64cipher, sizeof(char), b64len, fdout);
+
+	free(buff);
+	free(cipher);
+	free(b64cipher);
+	fclose(fdin);
+	fclose(fdout);
+
+	return b64len;
+}
+
+size_t vigenere_decrypt_file(const char* fnout, const char* fnin){
+	FILE *fdin, *fdout;
+	size_t size;
+
+	fdin = fopen(fnin,"r");
+	fseek(fdin, 0, SEEK_END);
+	size = ftell(fdin);
+	rewind(fdin);
+
+	char* buff = (char*)malloc((size+1)*sizeof(char));
+	fread(buff, size, sizeof(char), fdin);
+	buff[size] = 0;
+	size_t byteslen;
+	unsigned char* bytes = base64_to_bytes(buff, size, &byteslen);
+
+	unsigned char* key;
+	size_t keylen;
+	char* msg = break_repeating_key_xor(bytes, byteslen, &key, &keylen);
+	size_t msglen = strlen(msg);
+
+	fdout = fopen(fnout,"w");
+	fwrite(msg, sizeof(char), msglen, fdout);
+
+	free(bytes);
+	free(msg);
+	free(key);
+	fclose(fdin);
+	fclose(fdout);
+
+	return msglen;
 }
 

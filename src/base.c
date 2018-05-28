@@ -168,6 +168,12 @@ unsigned char* base64_to_bytes(char* base64str, size_t base64strlen, size_t* byt
 		}
 	}
 	bytes[byteslen] = 0;
+	if (base64str[base64strlen-1] == '='){
+		byteslen--;
+	}
+	if (base64str[base64strlen-2] == '='){
+		byteslen--;
+	}
 	*byteslenp = byteslen;
 	return bytes;
 }
