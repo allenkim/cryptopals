@@ -4,6 +4,7 @@
 
 void init_letter_freq();
 unsigned char* xorbytes(unsigned char* bytes1, unsigned char* bytes2, size_t len);
+void xorbytes_inplace(unsigned char* bytes1, unsigned char* bytes2, size_t len);
 unsigned char* single_byte_xor(unsigned char* bytes, unsigned char byte, size_t len);
 float score_plaintext(unsigned char* bytes, size_t len);
 float score_single_byte_xor(unsigned char* bytes, size_t len, unsigned char** topp,  unsigned char* byte);

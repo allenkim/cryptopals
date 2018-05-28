@@ -3,6 +3,7 @@
 #include <openssl/err.h>
 #include <string.h>
 
+#include "xor.h"
 #include "aes.h"
 
 // Reference: https://wiki.openssl.org/index.php/EVP_Symmetric_Encryption_and_Decryption
@@ -55,11 +56,38 @@ int aes_128_ecb_decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned 
 	return plaintext_len;
 }
 
+int aes_128_cbc_encrypt(unsigned char* plaintext, int plaintext_len, unsigned char* key, unsigned char* iv, unsigned char* ciphertext){
+	int padded_len;
+	unsigned char* padded_plaintext = pkcs7_pad(plaintext, plaintext_len, AES_BLOCK_SIZE, &padded_len);
+	unsigned char* prev = iv;
+	for (int i = 0; i < padded_len; i+=AES_BLOCK_SIZE){
+		unsigned char* xor_input = xorbytes(padded_plaintext+i, prev, AES_BLOCK_SIZE);
+		aes_128_ecb_encrypt(xor_input, AES_BLOCK_SIZE, key, NULL, ciphertext+i);
+		prev = ciphertext+i;
+	}
+	free(padded_plaintext);
+	return padded_len;
+}
+
+int aes_128_cbc_decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext){
+	unsigned char* prev = iv;
+	for (int i = 0; i < ciphertext_len; i+=AES_BLOCK_SIZE){
+		aes_128_ecb_decrypt(ciphertext+i, AES_BLOCK_SIZE, key, NULL, plaintext+i);
+		xorbytes_inplace(plaintext+i, prev, AES_BLOCK_SIZE);
+		prev = ciphertext+i;
+	}
+	return ciphertext_len - (unsigned)plaintext[ciphertext_len-1];
+}
+
 unsigned char* pkcs7_pad(unsigned char* plaintext, int plaintext_len, int block_len, int* padded_lenp){
 	int extra_len = block_len - plaintext_len % block_len;
 	if (!extra_len)
 		extra_len = block_len;
 	int padded_len = plaintext_len + extra_len;
+	if (extra_len > 255){
+		fprintf(stderr, "Cannot pad '%d' for pkcs7_pad\n", extra_len);
+		exit(EXIT_FAILURE);
+	}
 	unsigned char* padded_plaintext = (unsigned char*)malloc(padded_len);
 	memcpy(padded_plaintext, plaintext, plaintext_len);
 	for (int i = 0; i < extra_len; i++){
@@ -67,5 +95,14 @@ unsigned char* pkcs7_pad(unsigned char* plaintext, int plaintext_len, int block_
 	}
 	*padded_lenp = padded_len;
 	return padded_plaintext;
+}
+
+unsigned char* pkcs7_unpad(unsigned char* padded_plaintext, int padded_len, int* plaintext_lenp){
+	int extra_len = padded_plaintext[padded_len-1];
+	int plaintext_len = padded_len - extra_len;
+	unsigned char* plaintext = (unsigned char*)malloc(plaintext_len);
+	memcpy(plaintext, padded_plaintext, plaintext_len);
+	*plaintext_lenp = plaintext_len;
+	return plaintext;
 }
 

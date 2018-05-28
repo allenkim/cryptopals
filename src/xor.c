@@ -15,6 +15,11 @@ unsigned char* xorbytes(unsigned char* bytes1, unsigned char* bytes2, size_t len
 	return xorbytes_arr;
 }
 
+void xorbytes_inplace(unsigned char* bytes1, unsigned char* bytes2, size_t len){
+	for (int i = 0; i < len; i++){
+		bytes1[i] ^= bytes2[i];
+	}
+}
 unsigned char* single_byte_xor(unsigned char* bytes, unsigned char byte, size_t len){
 	unsigned char* xorbytes_arr = (unsigned char*)malloc(len*sizeof(unsigned char));
 	unsigned char* charbytes = (unsigned char*)malloc(len*sizeof(unsigned char));
