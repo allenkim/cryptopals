@@ -55,3 +55,17 @@ int aes_128_ecb_decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned 
 	return plaintext_len;
 }
 
+unsigned char* pkcs7_pad(unsigned char* plaintext, int plaintext_len, int block_len, int* padded_lenp){
+	int extra_len = block_len - plaintext_len % block_len;
+	if (!extra_len)
+		extra_len = block_len;
+	int padded_len = plaintext_len + extra_len;
+	unsigned char* padded_plaintext = (unsigned char*)malloc(padded_len);
+	memcpy(padded_plaintext, plaintext, plaintext_len);
+	for (int i = 0; i < extra_len; i++){
+		padded_plaintext[padded_len-i-1] = (unsigned char)extra_len;
+	}
+	*padded_lenp = padded_len;
+	return padded_plaintext;
+}
+
