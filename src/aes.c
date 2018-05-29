@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "xor.h"
+#include "base.h"
 #include "aes.h"
 
 // Reference: https://wiki.openssl.org/index.php/EVP_Symmetric_Encryption_and_Decryption
@@ -16,14 +17,16 @@ int aes_128_ecb_encrypt(unsigned char* plaintext, int plaintext_len, unsigned ch
 	if (!(ctx = EVP_CIPHER_CTX_new()))
 		ERR_print_errors_fp(stderr);
 
-	if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_128_ecb(), NULL, key, iv))
+	if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_128_ecb(), NULL, key, iv))
 		ERR_print_errors_fp(stderr);
 
-	if(1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
+	EVP_CIPHER_CTX_set_padding(ctx, 0);
+
+	if (1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
 		ERR_print_errors_fp(stderr);
 	ciphertext_len = len;
 
-	if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
+	if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
 		ERR_print_errors_fp(stderr);
 	ciphertext_len += len;
 
@@ -40,14 +43,16 @@ int aes_128_ecb_decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned 
 	if (!(ctx = EVP_CIPHER_CTX_new()))
 		ERR_print_errors_fp(stderr);
 
-	if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_128_ecb(), NULL, key, iv))
+	if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_128_ecb(), NULL, key, iv))
 		ERR_print_errors_fp(stderr);
 
-	if(1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
+	EVP_CIPHER_CTX_set_padding(ctx, 0);
+
+	if (1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
 		ERR_print_errors_fp(stderr);
 	plaintext_len = len;
 
-	if(1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len))
+	if (1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len))
 		ERR_print_errors_fp(stderr);
 	plaintext_len += len;
 
@@ -64,6 +69,7 @@ int aes_128_cbc_encrypt(unsigned char* plaintext, int plaintext_len, unsigned ch
 		unsigned char* xor_input = xorbytes(padded_plaintext+i, prev, AES_BLOCK_SIZE);
 		aes_128_ecb_encrypt(xor_input, AES_BLOCK_SIZE, key, NULL, ciphertext+i);
 		prev = ciphertext+i;
+		free(xor_input);
 	}
 	free(padded_plaintext);
 	return padded_len;
