@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "base.h"
+#include "bytes.h"
 #include "hash_table.h"
 
 int main(){
@@ -34,11 +34,8 @@ int main(){
 		free(bytes);
 	}
 	printf("BLOCK: ");
-	for (int i = 0; i < 16; i++){
-		printf("%02x", top_key[i]);
-	}
-
-	printf("\nRepeats %d times!\n%s\n", max_rep, top_hex);
+	print_bytes(top_key, 16);
+	printf("Repeats %d times!\n%s\n", max_rep, top_hex);
 	
 	free(top_hex);
 	free(hex);

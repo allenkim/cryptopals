@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "xor.h"
-#include "base.h"
+#include "bytes.h"
 
 void test_base64_to_str(char* base64, char* answer){
 	size_t base64size = strlen(base64);

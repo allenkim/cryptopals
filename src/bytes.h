@@ -1,5 +1,5 @@
-#ifndef BASE_H
-#define BASE_H
+#ifndef BYTES_H
+#define BYTES_H
 #include <stddef.h>
 
 unsigned char char_to_hexval(char c);

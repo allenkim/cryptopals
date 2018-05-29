@@ -5,7 +5,7 @@
 #include <string.h>
 #include <errno.h>
 #include "xor.h"
-#include "base.h"
+#include "bytes.h"
 
 unsigned char* xorbytes(unsigned char* bytes1, unsigned char* bytes2, size_t len){
 	unsigned char* xorbytes_arr = (unsigned char*)malloc(len*sizeof(unsigned char));

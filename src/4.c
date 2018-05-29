@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "xor.h"
-#include "base.h"
+#include "bytes.h"
 
 int main(){
 	init_letter_freq();
