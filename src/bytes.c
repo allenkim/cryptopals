@@ -203,19 +203,23 @@ char* hex_to_base64(char* hex, size_t hexsize, size_t* base64lenp){
 size_t max_freq_bytes(unsigned char* bytes, size_t byteslen, size_t block_size){
 	unsigned char top_key[block_size];
 	unsigned char key[block_size];
+	unsigned char freq_bytes[1];
+	size_t byte; // should always be 1
 	size_t max_freq = 1;
 	ht_hash_table* ht = ht_new();
 	for (int i = 0; i < byteslen; i += block_size){
 		memcpy(key, bytes+i, block_size);
 		int freq = 1;
-		bool found = ht_search(ht, key, block_size, &freq);
-		if (found){
+		unsigned char* val = ht_search(ht, key, block_size, &byte);
+		if (val){
+			freq = val[0];
 			if (++freq > max_freq){
 				max_freq = freq;
 				memcpy(top_key, key, block_size);
 			}
 		}
-		ht_insert(ht, key, block_size, freq);
+		freq_bytes[0] = freq;
+		ht_insert(ht, key, block_size, freq_bytes, 1);
 	}
 	ht_del_hash_table(ht);
 	return max_freq;

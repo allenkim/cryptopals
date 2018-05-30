@@ -5,8 +5,9 @@
 
 typedef struct{
     unsigned char* key;
-	size_t len;
-    int value;
+	size_t key_len;
+	unsigned char* val;
+	size_t val_len;
 } ht_item;
 
 typedef struct {
@@ -18,9 +19,9 @@ typedef struct {
 
 ht_hash_table* ht_new(void);
 void ht_del_hash_table(ht_hash_table* ht);
-void ht_insert(ht_hash_table* ht, unsigned char* key, size_t keylen, int value);
-bool ht_search(ht_hash_table* ht, unsigned char* key, size_t keylen, int* value);
-bool ht_delete(ht_hash_table* ht, unsigned char* key, size_t keylen);
+void ht_insert(ht_hash_table* ht, unsigned char* key, size_t key_len, unsigned char* val, size_t val_len);
+unsigned char* ht_search(ht_hash_table* ht, unsigned char* key, size_t key_len, size_t* val_len);
+bool ht_delete(ht_hash_table* ht, unsigned char* key, size_t key_len);
 
 #endif
 
