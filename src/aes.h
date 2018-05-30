@@ -17,7 +17,6 @@ int aes_128_cbc_decrypt(unsigned char* ciphertext, int ciphertext_len, unsigned 
 
 void rand_bytes(unsigned char* bytes, size_t len);
 int randint(int low, int high);
-int aes_128_rand_encrypt(unsigned char* plaintext, int plaintext_len, unsigned char* ciphertext, int* mode);
 
 #endif
 

@@ -5,16 +5,18 @@
 
 typedef struct{
     unsigned char* key;
+	size_t len;
     int value;
 } ht_item;
 
 typedef struct {
+	size_t base_size;
     size_t size;
     size_t count;
     ht_item** items;
 } ht_hash_table;
 
-ht_hash_table* ht_new(size_t init_size);
+ht_hash_table* ht_new(void);
 void ht_del_hash_table(ht_hash_table* ht);
 void ht_insert(ht_hash_table* ht, unsigned char* key, size_t keylen, int value);
 bool ht_search(ht_hash_table* ht, unsigned char* key, size_t keylen, int* value);

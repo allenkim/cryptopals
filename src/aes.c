@@ -177,30 +177,3 @@ int randint(int low, int high){
 	return rand() % (high - low + 1) + low;
 }
 
-int aes_128_rand_encrypt(unsigned char* plaintext, int plaintext_len, unsigned char* ciphertext, int* mode){
-	unsigned char key[16];
-	unsigned char iv[16];
-	rand_bytes(key, 16);
-	rand_bytes(iv, 16);
-	int prelen = randint(5,10);
-	int postlen = randint(5,10);
-	int padded_len = prelen + plaintext_len + postlen;
-	unsigned char* padded_pt = (unsigned char*)malloc(padded_len);
-	rand_bytes(padded_pt, prelen);
-	memcpy(padded_pt+prelen, plaintext, plaintext_len);
-	rand_bytes(padded_pt+prelen+plaintext_len, postlen);
-	int ciphertext_len = -1;
-	*mode = randint(0,1);
-	switch (*mode){
-		case 0: // ECB
-			ciphertext_len = aes_128_ecb_encrypt(padded_pt, padded_len, key, NULL, ciphertext);
-			break;
-		case 1: // CBC
-			ciphertext_len = aes_128_cbc_encrypt(padded_pt, padded_len, key, iv, ciphertext);
-			break;
-	}
-	free(padded_pt);
-
-	return ciphertext_len;
-}
-

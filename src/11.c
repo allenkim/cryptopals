@@ -3,27 +3,16 @@
 #include <string.h>
 #include "bytes.h"
 #include "aes.h"
+#include "oracles.h"
 #include "hash_table.h"
 
 void detect_mode(unsigned char* ct, int ctlen){
-	unsigned char top_key[AES_BLOCK_SIZE];
-	unsigned char key[AES_BLOCK_SIZE];
-	int max_rep = 1;
-	ht_hash_table* ht = ht_new(17);
-	for (int i = 0; i < ctlen; i += AES_BLOCK_SIZE){
-		memcpy(key, ct+i, AES_BLOCK_SIZE);
-		int freq = 1;
-		bool found = ht_search(ht, key, AES_BLOCK_SIZE, &freq);
-		if (found){
-			if (++freq > max_rep){
-				max_rep = freq;
-				memcpy(top_key, key, AES_BLOCK_SIZE);
-			}
-		}
-		ht_insert(ht, key, AES_BLOCK_SIZE, freq);
+	int max_freq = 1;
+	int freq = max_freq_bytes(ct, ctlen, 16);
+	if (freq > max_freq){
+		max_freq = freq;
 	}
-	ht_del_hash_table(ht);
-	printf("MODE GUESS: %s\n", (max_rep == 1) ? "CBC" : "ECB");
+	printf("MODE GUESS: %s\n", (max_freq == 1) ? "CBC" : "ECB");
 }
 
 int main(){
@@ -33,9 +22,9 @@ int main(){
 	memset(pt, 0, ptlen);
 	unsigned char ct[ptlen+AES_BLOCK_SIZE];
 	int mode;
-	int ctlen = aes_128_rand_encrypt(pt, ptlen, ct, &mode);
-	printf("MODE USED:  %s\n", mode ? "CBC" : "ECB");
+	int ctlen = encrypt_oracle_11(pt, ptlen, ct, &mode);
 	print_bytes(ct, ctlen);
+	printf("MODE USED:  %s\n", mode ? "CBC" : "ECB");
 	detect_mode(ct, ctlen);
 	return 0;
 }

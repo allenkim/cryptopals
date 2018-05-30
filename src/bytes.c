@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <stdbool.h>
+#include <string.h>
+#include "hash_table.h"
 #include "bytes.h"
 
 const char base64table[64] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
@@ -196,5 +198,26 @@ char* hex_to_base64(char* hex, size_t hexsize, size_t* base64lenp){
 	free(bytes);
 	*base64lenp = base64len;
 	return base64;
+}
+
+size_t max_freq_bytes(unsigned char* bytes, size_t byteslen, size_t block_size){
+	unsigned char top_key[block_size];
+	unsigned char key[block_size];
+	size_t max_freq = 1;
+	ht_hash_table* ht = ht_new();
+	for (int i = 0; i < byteslen; i += block_size){
+		memcpy(key, bytes+i, block_size);
+		int freq = 1;
+		bool found = ht_search(ht, key, block_size, &freq);
+		if (found){
+			if (++freq > max_freq){
+				max_freq = freq;
+				memcpy(top_key, key, block_size);
+			}
+		}
+		ht_insert(ht, key, block_size, freq);
+	}
+	ht_del_hash_table(ht);
+	return max_freq;
 }
 

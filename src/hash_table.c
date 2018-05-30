@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hash_table.h"
+#include "prime.h"
+
+#define HT_INIT_SIZE 256
 
 static ht_item HT_DELETED_ITEM = {NULL, 0};
 
@@ -8,16 +11,53 @@ static ht_item* ht_new_item(unsigned char* k, size_t klen, int v){
 	ht_item* it = (ht_item*)malloc(sizeof(ht_item));
 	it->key = (unsigned char*)malloc(klen);
 	memcpy(it->key, k, klen);
+	it->len = klen;
 	it->value = v;
 	return it;
 }
 
-ht_hash_table* ht_new(size_t init_size){
+static ht_hash_table* ht_new_sized(const size_t base_size){
 	ht_hash_table* ht = (ht_hash_table*)malloc(sizeof(ht_hash_table));
-	ht->size = init_size;
+	ht->base_size = base_size;
+	ht->size = next_prime(base_size);
 	ht->count = 0;
 	ht->items = (ht_item**)calloc(ht->size, sizeof(ht_item*));
 	return ht;
+}
+
+ht_hash_table* ht_new(void){
+	return ht_new_sized(HT_INIT_SIZE);
+}
+
+static void ht_resize(ht_hash_table* ht, const size_t base_size){
+	if (base_size <= HT_INIT_SIZE)
+		return;
+	ht_hash_table* new_ht = ht_new_sized(base_size);
+	for (int i = 0; i < ht->size; i++){
+		ht_item* item = ht->items[i];
+		if (item && item != &HT_DELETED_ITEM)
+			ht_insert(new_ht, item->key, item->len, item->value);
+	}
+	ht->base_size = new_ht->base_size;
+	ht->count = new_ht->count;
+
+	ht_item** tmp_items = ht->items;
+    ht->items = new_ht->items;
+    new_ht->items = tmp_items;
+
+	const size_t tmp_size = ht->size;
+	ht->size = new_ht->size;
+	new_ht->size = tmp_size;
+
+	ht_del_hash_table(new_ht);
+}
+
+static void ht_resize_up(ht_hash_table* ht){
+	ht_resize(ht, ht->base_size * 2);
+}
+
+static void ht_resize_down(ht_hash_table* ht){
+	ht_resize(ht, ht->base_size / 2);
 }
 
 static void ht_del_item(ht_item* i){
@@ -46,6 +86,9 @@ static size_t ht_hash(unsigned char* str, size_t strlen, const int m) {
 }
 
 void ht_insert(ht_hash_table* ht, unsigned char* key, size_t keylen, int value){
+	const size_t load = ht->count * 100 / ht->size;
+	if (load > 70)
+		ht_resize_up(ht);
 	size_t idx = ht_hash(key, keylen, ht->size);
 	ht_item* curr = ht->items[idx];
 	while (curr){
@@ -81,6 +124,9 @@ bool ht_search(ht_hash_table* ht, unsigned char* key, size_t keylen, int* value)
 }
 
 bool ht_delete(ht_hash_table* ht, unsigned char* key, size_t keylen){
+	const size_t load = ht->count * 100 / ht->size;
+	if (load < 10)
+		ht_resize_down(ht);
 	size_t idx = ht_hash(key, keylen, ht->size);
 	ht_item* curr = ht->items[idx];
 	while (curr){
