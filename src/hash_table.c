@@ -125,6 +125,7 @@ unsigned char* ht_search(ht_hash_table* ht, unsigned char* key, size_t key_len, 
 		idx = (idx+1) % ht->size;
 		curr = ht->items[idx];
 	}
+	*val_len = 0;
 	return NULL;
 }
 

@@ -49,6 +49,13 @@ void print_bytes(unsigned char* bytes, size_t byteslen){
 	printf("\n");
 }
 
+void print_chars(unsigned char* bytes, size_t byteslen){
+	for (int i = 0; i < byteslen; i++){
+		printf("%c", bytes[i]);
+	}
+	printf("\n");
+}
+
 unsigned char hex_to_byte(char* hexbyte, size_t len){
 	if (len < 1 || len > 2){
 		fprintf(stderr, "Invalid len '%zu' for hex2byte\n", len);
@@ -225,3 +232,7 @@ size_t max_freq_bytes(unsigned char* bytes, size_t byteslen, size_t block_size){
 	return max_freq;
 }
 
+void set_repeat_bytes(unsigned char* bytes, size_t byteslen, unsigned char byte){
+	for (int i = 0; i < byteslen; i++)
+		bytes[i] = byte;
+}

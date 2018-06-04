@@ -45,6 +45,7 @@ int encrypt_oracle_12(unsigned char* plaintext, int plaintext_len, unsigned char
 	unsigned char* unknown_bytes = base64_to_bytes(unknown_str, strlen(unknown_str), &unknown_bytes_len);
 	int padded_len = plaintext_len + unknown_bytes_len;
 	unsigned char* padded_pt = (unsigned char*)malloc(padded_len);
+	memcpy(padded_pt, plaintext, plaintext_len);
 	memcpy(padded_pt+plaintext_len, unknown_bytes, unknown_bytes_len);
 	int ciphertext_len = aes_128_ecb_encrypt(padded_pt, padded_len, key_12, NULL, ciphertext);
 	free(padded_pt);
