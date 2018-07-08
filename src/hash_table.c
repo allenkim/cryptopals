@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "hash_table.h"
@@ -32,6 +33,19 @@ static ht_hash_table* ht_new_sized(const size_t base_size){
 
 ht_hash_table* ht_new(void){
 	return ht_new_sized(HT_INIT_SIZE);
+}
+
+ht_hash_table* ht_new_parse(char* cookie){
+	ht_hash_table* ht = ht_new();
+	char* key;
+	key = strtok(cookie, "&");
+	while (key != NULL){
+		char* val = strchr(key, '=');
+		*val++ = '\0';
+		ht_insert_str(ht, key, val);
+		key = strtok(NULL, "&");
+	}
+	return ht;
 }
 
 static void ht_resize(ht_hash_table* ht, const size_t base_size){
@@ -118,14 +132,16 @@ unsigned char* ht_search(ht_hash_table* ht, unsigned char* key, size_t key_len, 
 	while (curr){
 		if (curr != &HT_DELETED_ITEM){
 			if (!memcmp(curr->key, key, key_len)){
-				*val_len = curr->val_len;
+				if (val_len)
+					*val_len = curr->val_len;
 				return curr->val;
 			}
 		}
 		idx = (idx+1) % ht->size;
 		curr = ht->items[idx];
 	}
-	*val_len = 0;
+	if (val_len)
+		*val_len = 0;
 	return NULL;
 }
 
@@ -146,5 +162,17 @@ bool ht_delete(ht_hash_table* ht, unsigned char* key, size_t key_len){
 		curr = ht->items[idx];
 	}
 	return false;
+}
+
+void ht_insert_str(ht_hash_table* ht, char* key, char* val){
+	ht_insert(ht, (unsigned char*)key, strlen(key), (unsigned char*)val, strlen(val)+1);
+}
+
+char* ht_search_str(ht_hash_table* ht, char* key){
+	return (char*)ht_search(ht, (unsigned char*)key, strlen(key), NULL);
+}
+
+bool ht_delete_str(ht_hash_table* ht, char* key){
+	return ht_delete(ht, (unsigned char*)key, strlen(key));
 }
 
