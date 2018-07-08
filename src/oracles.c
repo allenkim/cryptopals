@@ -8,6 +8,9 @@
 static bool key_12_set;
 static unsigned char key_12[16];
 
+static bool key_13_set;
+static unsigned char key_13[16];
+
 int encrypt_oracle_11(unsigned char* plaintext, int plaintext_len, unsigned char* ciphertext, int* mode){
 	unsigned char key[16];
 	unsigned char iv[16];
@@ -51,5 +54,26 @@ int encrypt_oracle_12(unsigned char* plaintext, int plaintext_len, unsigned char
 	free(padded_pt);
 	free(unknown_bytes);
 	return ciphertext_len;
+}
+
+int profile_for(char* email, unsigned char* ciphertext){
+	if (!key_13_set){
+		rand_bytes(key_13, 16);
+		key_13_set = true;
+	}
+	char* invalid = strpbrk(email, "&=");
+	if (invalid)
+		return 0;
+	size_t email_len = strlen(email);
+	char* encoding = (char*)calloc(25+email_len, 1);
+	strcpy(encoding, "email=");
+	strcat(encoding, email);
+	strcat(encoding, "&uid=10&role=user");
+	int ciphertext_len = aes_128_ecb_encrypt((unsigned char*)encoding, strlen(encoding)+1, key_13, NULL, ciphertext);
+	return ciphertext_len;
+}
+
+int profile_dec(unsigned char* ciphertext, int ciphertext_len, char* profile){
+	return aes_128_ecb_decrypt(ciphertext, ciphertext_len, key_13, NULL, (unsigned char*)profile);
 }
 

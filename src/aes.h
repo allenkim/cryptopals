@@ -7,10 +7,10 @@ unsigned char* pkcs7_pad(unsigned char* plaintext, int plaintext_len, int block_
 unsigned char* pkcs7_unpad(unsigned char* padded_plaintext, int padded_len, int* plaintext_lenp);
 
 int aes_block_encrypt(unsigned char* plaintext, unsigned char* key, unsigned char* ciphertext);
-int aes_block_decrypt(unsigned char *ciphertext, unsigned char* key, unsigned char *plaintext);
+int aes_block_decrypt(unsigned char* ciphertext, unsigned char* key, unsigned char* plaintext);
 
 int aes_128_ecb_encrypt(unsigned char* plaintext, int plaintext_len, unsigned char* key, unsigned char* iv, unsigned char* ciphertext);
-int aes_128_ecb_decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char* key, unsigned char* iv, unsigned char* plaintext);
+int aes_128_ecb_decrypt(unsigned char* ciphertext, int ciphertext_len, unsigned char* key, unsigned char* iv, unsigned char* plaintext);
 
 int aes_128_cbc_encrypt(unsigned char* plaintext, int plaintext_len, unsigned char* key, unsigned char* iv, unsigned char* ciphertext);
 int aes_128_cbc_decrypt(unsigned char* ciphertext, int ciphertext_len, unsigned char* key, unsigned char* iv, unsigned char* plaintext);
